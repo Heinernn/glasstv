@@ -1,5 +1,7 @@
 # GlassTV
 
+[![Build launcher](https://github.com/Heinernn/glasstv/actions/workflows/build.yml/badge.svg)](https://github.com/Heinernn/glasstv/actions/workflows/build.yml)
+
 **Debloat an Android TV, give it a glass-style Apple TV home screen, and AirPlay to it from an iPhone.**
 *(Español: [README.es.md](README.es.md))*
 
@@ -47,7 +49,7 @@ cd debloat
 .\disable.ps1 com.vendor.analytics      # one package at a time, protected list enforced
 .\restore-tv.ps1                        # undo everything
 cd ..\launcher
-.\install.ps1                           # build, install, open (needs JDK 11, Android SDK 33, Gradle 7.5)
+.\install.ps1                           # build, install, open (needs JDK 11 and Android SDK 33; Gradle comes from the included wrapper)
 ```
 
 Read [docs/GUIDE.md](docs/GUIDE.md) first: it explains how to check that a TV can do this at all, the back-up step, the Home takeover, and
