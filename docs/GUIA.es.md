@@ -36,7 +36,7 @@ Play Store y Play Services. `disable.ps1` aplica una lista inicial; amplíala po
 
 ## 3. Launcher
 
-- Compilar: `launcher/build.ps1` (JDK 11, `ANDROID_HOME` con plataforma 33 y build-tools, Gradle 7.5). Instalar: `launcher/install.ps1`.
+- Compilar: `launcher/build.ps1` (JDK 11, `ANDROID_HOME` con plataforma 33 y build-tools; Gradle viene en el wrapper incluido). Instalar: `launcher/install.ps1`.
 - Configuración en `launcher/app/src/main/res/values/config.xml`: `columns`, `dock_apps` (paquetes, de izquierda a derecha), `hidden_apps`.
   Fondo: `res/drawable/wallpaper.xml` (color liso; cámbialo por un bitmap para usar una imagen).
 - El nombre del Wi-Fi se lee de `dumpsys wifi` con el permiso `DUMP` concedido por ADB, porque Android oculta el SSID a las apps cuando la

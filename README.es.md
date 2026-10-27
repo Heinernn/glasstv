@@ -47,7 +47,7 @@ cd debloat
 .\disable.ps1 com.fabricante.analytics  # un paquete cada vez, con la lista protegida
 .\restore-tv.ps1                        # deshacer todo
 cd ..\launcher
-.\install.ps1                           # compila, instala y abre (JDK 11, Android SDK 33, Gradle 7.5)
+.\install.ps1                           # compila, instala y abre (JDK 11, Android SDK 33; Gradle viene en el wrapper incluido)
 ```
 
 Lee antes [docs/GUIA.es.md](docs/GUIA.es.md): explica cómo comprobar que una TV admite todo esto, la copia de seguridad, la toma del Home y el receptor AirPlay.
