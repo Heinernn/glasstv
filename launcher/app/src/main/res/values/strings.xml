@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Inicio</string>
+    <string name="inputs">Entradas</string>
+    <string name="settings">Ajustes</string>
+    <string name="wifi">Wi-Fi</string>
+    <string name="ethernet">Ethernet</string>
+    <string name="no_network">Sin red</string>
+    <string name="live_tv">TV en directo</string>
+    <string name="iphone">iPhone</string>
+    <!-- App receptora de AirPlay que abre la opcion "iPhone" del menu Entradas. -->
+    <string name="airplay_receiver" translatable="false">io.github.jqssun.airplay</string>
+    <string name="no_inputs">Sin entradas</string>
+    <string name="cannot_open">No se pudo abrir</string>
+</resources>

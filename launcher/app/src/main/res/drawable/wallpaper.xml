@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fondo del launcher. Para poner una imagen: cambia este archivo por un bitmap
+     (res/drawable-nodpi/wallpaper.jpg) y borra este XML. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#FF000000" />
+</shape>

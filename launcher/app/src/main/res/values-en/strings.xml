@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Home</string>
+    <string name="inputs">Inputs</string>
+    <string name="settings">Settings</string>
+    <string name="wifi">Wi-Fi</string>
+    <string name="ethernet">Ethernet</string>
+    <string name="no_network">No network</string>
+    <string name="live_tv">Live TV</string>
+    <string name="iphone">iPhone</string>
+    <string name="no_inputs">No inputs</string>
+    <string name="cannot_open">Could not open</string>
+</resources>

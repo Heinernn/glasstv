@@ -1,0 +1,53 @@
+﻿diff --git a/cmake/BuildOpenSSL.cmake b/cmake/BuildOpenSSL.cmake
+index 8091a72..8a1b6f6 100644
+--- a/cmake/BuildOpenSSL.cmake
++++ b/cmake/BuildOpenSSL.cmake
+@@ -194,7 +194,6 @@ else()
+ 
+         INSTALL_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> -- ${PERL_PATH_FIX_INSTALL}
+         COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> -- ${MAKE_PROGRAM} DESTDIR=${OPENSSL_PREFIX} install_sw ${INSTALL_OPENSSL_MAN}
+-        COMMAND ${CMAKE_COMMAND} -G ${CMAKE_GENERATOR} ${CMAKE_BINARY_DIR}                    # force CMake-reload
+ 
+         LOG_INSTALL 1
+     )
+diff --git a/scripts/building_env.py b/scripts/building_env.py
+index 8509d82..196997c 100644
+--- a/scripts/building_env.py
++++ b/scripts/building_env.py
+@@ -44,7 +44,9 @@ if args.verbose:
+     print(args)
+ 
+ env = os.environ
+-env_sep = ';' if args.os == 'WIN32' else ':'
++# windows host cross-compiling for android: bash (msys) is still needed and PATH uses ';'
++win_host = os.name == 'nt'
++env_sep = ';' if (args.os == 'WIN32' or win_host) else ':'
+ 
+ def add_env(k, v):
+     global env
+@@ -77,7 +79,14 @@ elif args.os == 'LINUX_CROSS_ANDROID':
+ 
+     # unescape and save all env vars
+     for k, v in pattern.findall(content):
+-        add_env(k, v.replace("\\\"", "\""))
++        v = v.replace("\\\"", "\"")
++        if k == 'PATH' and win_host:
++            # the cmake file joins directories with ':', which clashes with drive letters
++            v = v.replace('/:', '/;')
++        if k in ('ANDROID_NDK', 'ANDROID_NDK_ROOT') and win_host:
++            # msys perl sees PATH as /e/...: keep the ndk root in that form so path comparisons match
++            v = re.sub(r'^([A-Za-z]):/', lambda m: '/' + m.group(1).lower() + '/', v)
++        add_env(k, v)
+ 
+ # build command-line
+ cmd_exec, cmd_args = args.args[0], ' '.join(args.args[1:])
+@@ -91,6 +100,9 @@ if args.os == 'WIN32':
+     # we must emulate a UNIX environment to build openssl using mingw
+     proc = Popen(bash, env=env, cwd=args.cwd, stdin=PIPE, universal_newlines=True)
+     proc.communicate(input=cmd_line)
++elif win_host:
++    proc = Popen(['bash', '-c', cmd_line], env=env, cwd=args.cwd)
++    proc.communicate()
+ else:
+     proc = Popen(cmd_line, env=env, cwd=args.cwd, shell=True)
+     proc.communicate()

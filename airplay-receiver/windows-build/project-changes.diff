@@ -1,0 +1,272 @@
+﻿diff --git a/app/build.gradle.kts b/app/build.gradle.kts
+index 2f56e62..5e9fa57 100644
+--- a/app/build.gradle.kts
++++ b/app/build.gradle.kts
+@@ -11,7 +11,7 @@ val localProps = Properties().apply {
+     rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
+ }
+ 
+-val allAbis = listOf("arm64-v8a", "armeabi-v7a", "x86_64")
++val allAbis = listOf("armeabi-v7a")
+ 
+ android {
+     namespace = "io.github.jqssun.airplay"
+@@ -34,7 +34,7 @@ android {
+         minSdk = 23
+         targetSdk = 37
+         versionCode = 36
+-        versionName = "0.0.36"
++        versionName = "0.0.36-hls"
+ 
+         externalNativeBuild {
+             cmake {
+diff --git a/app/src/main/cpp/CMakeLists.txt b/app/src/main/cpp/CMakeLists.txt
+index 4787360..a9b7545 100644
+--- a/app/src/main/cpp/CMakeLists.txt
++++ b/app/src/main/cpp/CMakeLists.txt
+@@ -11,6 +11,8 @@ set(UXPLAY_LIB third_party/UxPlay/lib)
+ 
+ # ---------- OpenSSL (built from source via openssl-cmake) ----------
+ set(BUILD_OPENSSL ON CACHE BOOL "" FORCE)
++set(OPENSSL_USE_STATIC_LIBS ON CACHE STRING "" FORCE)
++set(OPENSSL_MODULES "no-shared" CACHE STRING "" FORCE)
+ set(OPENSSL_BUILD_VERSION "3.4.4" CACHE STRING "" FORCE)
+ set(CROSS_ANDROID ON CACHE BOOL "" FORCE)
+ string(REGEX MATCH "[0-9]+" AIRPLAY_ANDROID_API "${ANDROID_PLATFORM}")
+diff --git a/app/src/main/cpp/cmake/BuildFFmpeg.cmake b/app/src/main/cpp/cmake/BuildFFmpeg.cmake
+index cdc311e..b32b0cf 100644
+--- a/app/src/main/cpp/cmake/BuildFFmpeg.cmake
++++ b/app/src/main/cpp/cmake/BuildFFmpeg.cmake
+@@ -23,6 +23,24 @@ endif()
+ # NDK's per-API clang wrappers live next to the generic clang driver
+ get_filename_component(_ffmpeg_tc "${CMAKE_C_COMPILER}" DIRECTORY)
+ 
++# Windows: configure es un script de shell (sh de MSYS/Git), los clang por API del NDK son .cmd y make viene en el NDK
++if(CMAKE_HOST_WIN32)
++    find_program(_ffmpeg_sh sh REQUIRED)
++    set(_ffmpeg_cc "${_ffmpeg_tc}/clang.exe --target=${_ffmpeg_triple}${AIRPLAY_ANDROID_API}")
++    set(_ffmpeg_cxx "${_ffmpeg_tc}/clang++.exe --target=${_ffmpeg_triple}${AIRPLAY_ANDROID_API}")
++    set(_ffmpeg_make "${ANDROID_NDK}/prebuilt/windows-x86_64/bin/make.exe")
++    # configure only compiles (never runs) a host test file: use the ndk clang against the ndk sysroot
++    set(_ffmpeg_hostcc "--host-cc=${_ffmpeg_tc}/clang.exe --target=x86_64-linux-android${AIRPLAY_ANDROID_API} --sysroot=${CMAKE_SYSROOT}")
++    # configure only compiles (never runs) a host test file: use the ndk clang against the ndk sysroot
++    set(_ffmpeg_hostcc "--host-cc=gcc")
++else()
++    set(_ffmpeg_sh "")
++    set(_ffmpeg_cc "${_ffmpeg_tc}/${_ffmpeg_triple}${AIRPLAY_ANDROID_API}-clang")
++    set(_ffmpeg_cxx "${_ffmpeg_tc}/${_ffmpeg_triple}${AIRPLAY_ANDROID_API}-clang++")
++    set(_ffmpeg_make make)
++    set(_ffmpeg_hostcc "")
++endif()
++
+ ProcessorCount(_ffmpeg_jobs)
+ if(_ffmpeg_jobs EQUAL 0)
+     set(_ffmpeg_jobs 4)
+@@ -43,11 +61,12 @@ ExternalProject_Add(ffmpeg_ep
+     DOWNLOAD_COMMAND ""
+     PREFIX ${CMAKE_BINARY_DIR}/ffmpeg-ep
+     INSTALL_DIR ${FFMPEG_INSTALL}
+-    CONFIGURE_COMMAND <SOURCE_DIR>/configure
++    CONFIGURE_COMMAND ${_ffmpeg_sh} <SOURCE_DIR>/configure
+         --prefix=<INSTALL_DIR>
+         --target-os=android --arch=${_ffmpeg_arch} ${_ffmpeg_cpu} --enable-cross-compile
+-        --cc=${_ffmpeg_tc}/${_ffmpeg_triple}${AIRPLAY_ANDROID_API}-clang
+-        --cxx=${_ffmpeg_tc}/${_ffmpeg_triple}${AIRPLAY_ANDROID_API}-clang++
++        "--cc=${_ffmpeg_cc}"
++        "--cxx=${_ffmpeg_cxx}"
++        "${_ffmpeg_hostcc}"
+         --ar=${_ffmpeg_tc}/llvm-ar --nm=${_ffmpeg_tc}/llvm-nm
+         --ranlib=${_ffmpeg_tc}/llvm-ranlib --strip=${_ffmpeg_tc}/llvm-strip
+         --sysroot=${CMAKE_SYSROOT}
+@@ -55,8 +74,8 @@ ExternalProject_Add(ffmpeg_ep
+         --disable-all --disable-debug --disable-network --disable-autodetect
+         --enable-avcodec --enable-decoder=alac,aac --enable-static --disable-shared
+         ${_ffmpeg_sanitize}
+-    BUILD_COMMAND make -j${_ffmpeg_jobs}
+-    INSTALL_COMMAND make install
++    BUILD_COMMAND ${_ffmpeg_make} -j${_ffmpeg_jobs}
++    INSTALL_COMMAND ${_ffmpeg_make} install
+     BUILD_BYPRODUCTS ${FFMPEG_INSTALL}/lib/libavcodec.a ${FFMPEG_INSTALL}/lib/libavutil.a
+     LOG_CONFIGURE TRUE
+     LOG_BUILD TRUE
+diff --git a/app/src/main/cpp/cmake/PatchOpenSSL.cmake b/app/src/main/cpp/cmake/PatchOpenSSL.cmake
+index 40f168f..dd88cd5 100644
+--- a/app/src/main/cpp/cmake/PatchOpenSSL.cmake
++++ b/app/src/main/cpp/cmake/PatchOpenSSL.cmake
+@@ -1,5 +1,8 @@
++find_package(Python3 COMPONENTS Interpreter QUIET)
++
+ set(OPENSSL_PATCH_COMMAND PATCH_COMMAND
+     ${CMAKE_COMMAND}
+     -DTARGET=util/mkbuildinf.pl
+-    -P ${CMAKE_CURRENT_LIST_DIR}/scrub_mkbuildinf.cmake
++    -DFIX_PY=${Python3_EXECUTABLE}
++    -P ${CMAKE_CURRENT_LIST_DIR}/patch_openssl.cmake
+ )
+diff --git a/app/src/main/kotlin/io/github/jqssun/airplay/Prefs.kt b/app/src/main/kotlin/io/github/jqssun/airplay/Prefs.kt
+index dfa7492..787a278 100644
+--- a/app/src/main/kotlin/io/github/jqssun/airplay/Prefs.kt
++++ b/app/src/main/kotlin/io/github/jqssun/airplay/Prefs.kt
+@@ -108,6 +108,8 @@ object Prefs {
+     val BENCHMARK_LOG = bool("benchmark_log", false, restart = true)
+     val IDLE_PREVIEW = bool("idle_preview", false)
+     val AUTO_FULLSCREEN = bool("auto_fullscreen", true)
++    // mirroring of wide frames (e.g. an iPhone in landscape) fills the screen instead of leaving black bars
++    val FILL_WIDE = bool("fill_wide", true)
+     val KEEP_SCREEN_ON = bool("keep_screen_on", true)
+     val ADVERTISE_VIDEO = bool("advertise_video", true, restart = true)
+     val ADVERTISE_MIRRORING = bool("advertise_mirroring", true, restart = true)
+diff --git a/app/src/main/kotlin/io/github/jqssun/airplay/service/AirPlayService.kt b/app/src/main/kotlin/io/github/jqssun/airplay/service/AirPlayService.kt
+index 974c5c2..f550be5 100644
+--- a/app/src/main/kotlin/io/github/jqssun/airplay/service/AirPlayService.kt
++++ b/app/src/main/kotlin/io/github/jqssun/airplay/service/AirPlayService.kt
+@@ -803,8 +803,14 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
+     override fun onConnectionDestroy() {
+         _connectionCount.value = (_connectionCount.value - 1).coerceAtLeast(0)
+         if (_connectionCount.value == 0) {
++            // a locked iPhone drops its connections. a video played straight from its own url (not through the
++            // sender-side playlist proxy on localhost) does not need the sender, so it keeps playing until it
++            // ends or the sender stops it (POST /stop)
++            val keepVideo = _videoPlaybackActive.value &&
++                _videoLocation.value?.startsWith("http://localhost") == false
+             // clients may drop without POST /stop; must run before the poll-state reset
+-            _endVideoPlayback("AirPlay Video stopped (disconnect)")
++            if (keepVideo) log("Sender disconnected: direct video keeps playing") else
++                _endVideoPlayback("AirPlay Video stopped (disconnect)")
+             // last client gone: release audio output devices to save power
+             audioRenderer.stop()
+             _audioOnly.value = false
+@@ -824,7 +830,7 @@ class AirPlayService : LifecycleService(), RaopCallbackHandler, LogListener {
+                 }
+                 _applyClientVol()
+             }
+-            mediaSession?.isActive = false
++            if (!keepVideo) mediaSession?.isActive = false
+             _refreshDacpPlayer()
+             _updateMediaNotification()
+         }
+diff --git a/app/src/main/kotlin/io/github/jqssun/airplay/ui/MainScreen.kt b/app/src/main/kotlin/io/github/jqssun/airplay/ui/MainScreen.kt
+index 6918d3e..b677eb1 100644
+--- a/app/src/main/kotlin/io/github/jqssun/airplay/ui/MainScreen.kt
++++ b/app/src/main/kotlin/io/github/jqssun/airplay/ui/MainScreen.kt
+@@ -29,7 +29,11 @@ import androidx.compose.ui.focus.FocusRequester
+ import androidx.compose.ui.focus.focusProperties
+ import androidx.compose.ui.focus.focusRequester
+ import androidx.compose.ui.focus.onFocusChanged
++import androidx.compose.ui.input.key.Key
++import androidx.compose.ui.input.key.KeyEventType
++import androidx.compose.ui.input.key.key
+ import androidx.compose.ui.input.key.onPreviewKeyEvent
++import androidx.compose.ui.input.key.type
+ import androidx.compose.ui.graphics.Brush
+ import androidx.compose.ui.graphics.Color
+ import androidx.compose.ui.graphics.asImageBitmap
+@@ -116,6 +120,16 @@ fun MainScreen(
+         )
+     }
+ 
++    // same surface, sized by the caller (mirroring scale modes)
++    val videoFramed: @Composable (Modifier) -> Unit = { sized ->
++        VideoSurfaceView(
++            onSurfaceAvailable = onSurfaceAvailable,
++            onSurfaceDestroyed = onSurfaceDestroyed,
++            applyAspectRatio = false,
++            modifier = sized
++        )
++    }
++
+     // fullscreen only once mirroring reports a size: connections rise before the kind is known
+     var prevMirroringActive by remember { mutableStateOf(false) }
+     LaunchedEffect(mirroringActive, audioOnly, videoPlaybackActive, pin) {
+@@ -512,6 +526,7 @@ fun MainScreen(
+         FullscreenVideo(
+             viewModel = viewModel,
+             video = video,
++            videoFramed = videoFramed,
+             onExitFullscreen = { fullscreen = false },
+             onPip = onPip
+         )
+@@ -774,9 +789,20 @@ private fun OverviewContent(
+ private fun FullscreenVideo(
+     viewModel: MainViewModel,
+     video: @Composable () -> Unit,
++    videoFramed: @Composable (Modifier) -> Unit,
+     onExitFullscreen: () -> Unit,
+     onPip: () -> Unit
+ ) {
++    val videoAspect by viewModel.videoAspect.collectAsState()
++    val fillWide by viewModel.pref(Prefs.FILL_WIDE).collectAsState()
++    // wide frames (iPhone in landscape, 2.1:1) fill the 16:9 screen; portrait and 16:9 frames stay whole.
++    // the Menu key on the remote cycles fit / fill / stretch
++    var mirrorScale by remember { mutableStateOf(MirrorScale.FIT) }
++    LaunchedEffect(videoAspect, fillWide) {
++        mirrorScale = if (fillWide && videoAspect in 1.85f..2.6f) MirrorScale.FILL else MirrorScale.FIT
++    }
++    val mirrorFocus = remember { FocusRequester() }
++    LaunchedEffect(Unit) { runCatching { mirrorFocus.requestFocus() } }
+     val videoResolution by viewModel.videoResolution.collectAsState()
+     val debugEnabled by viewModel.pref(Prefs.DEBUG_ENABLED).collectAsState()
+     val debugInfo by viewModel.debugInfo.collectAsState()
+@@ -793,10 +819,18 @@ private fun FullscreenVideo(
+         modifier = Modifier
+             .fillMaxSize()
+             .background(Color.Black)
++            .focusRequester(mirrorFocus)
++            .focusable()
++            .onPreviewKeyEvent { e ->
++                if (e.type == KeyEventType.KeyDown && (e.key == Key.Menu || e.key == Key.Info || e.key == Key.Guide)) {
++                    mirrorScale = MirrorScale.entries[(mirrorScale.ordinal + 1) % MirrorScale.entries.size]
++                    true
++                } else false
++            }
+             .pointerInput(Unit) { detectTapGestures { tapTick++ } },
+         contentAlignment = Alignment.Center
+     ) {
+-        video()
++        MirrorFrame(aspect = videoAspect, mode = mirrorScale) { sized -> videoFramed(sized) }
+         androidx.compose.animation.AnimatedVisibility(
+             visible = controlsVisible,
+             modifier = Modifier.align(Alignment.TopEnd)
+diff --git a/app/src/main/kotlin/io/github/jqssun/airplay/ui/VideoControls.kt b/app/src/main/kotlin/io/github/jqssun/airplay/ui/VideoControls.kt
+index 7d5adf2..9564a06 100644
+--- a/app/src/main/kotlin/io/github/jqssun/airplay/ui/VideoControls.kt
++++ b/app/src/main/kotlin/io/github/jqssun/airplay/ui/VideoControls.kt
+@@ -436,6 +436,38 @@ fun VideoContentFrame(
+     }
+ }
+ 
++enum class MirrorScale { FIT, FILL, STRETCH }
++
++// scale modes for screen mirroring: FIT keeps the whole frame (black bars), FILL covers the screen cropping at most
++// MAX_FILL_CROP of the frame, STRETCH distorts to the screen. content gets the size modifier for its surface
++@Composable
++fun MirrorFrame(
++    aspect: Float,
++    mode: MirrorScale,
++    modifier: Modifier = Modifier,
++    content: @Composable (Modifier) -> Unit,
++) {
++    BoxWithConstraints(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
++        val w = maxWidth
++        val h = maxHeight
++        val boxAspect = w / h
++        val wide = aspect > boxAspect
++        val fit = if (wide) Modifier.requiredSize(w, w / aspect) else Modifier.requiredSize(h * aspect, h)
++        val sizeModifier = when (mode) {
++            MirrorScale.FIT -> fit
++            MirrorScale.STRETCH -> Modifier.requiredSize(w, h)
++            MirrorScale.FILL -> {
++                val ratio = (if (wide) aspect / boxAspect else boxAspect / aspect).coerceIn(1f, MAX_FILL_CROP)
++                if (wide) Modifier.requiredSize(w * ratio, (w / aspect) * ratio)
++                else Modifier.requiredSize((h * aspect) * ratio, h * ratio)
++            }
++        }
++        content(sizeModifier)
++    }
++}
++
++private const val MAX_FILL_CROP = 1.35f
++
+ // key decision table: visible controls hand dpad to focus navigation,
+ // hidden controls make dpad seek, locked controls only unlock via center
+ fun handlePlayerKeyEvent(

@@ -1,0 +1,59 @@
+diff --git a/lib/airplay_video.c b/lib/airplay_video.c
+index 6f0d797..ba6203a 100644
+--- a/lib/airplay_video.c
++++ b/lib/airplay_video.c
+@@ -838,6 +838,18 @@ char *adjust_master_playlist (char *fcup_response_data, int fcup_response_datale
+         ptr = strstr(ptr, uri_prefix);
+     }
+ 
++    if (counter == 0) {
++        /* no absolute uri to rewrite (e.g. relative media uris): return the playlist unchanged */
++        char *copy = (char *) malloc((size_t) fcup_response_datalen + 1);
++        if (!copy) {
++            printf("Memory allocation failure (new_master)\n");
++            exit(1);
++        }
++        memcpy(copy, fcup_response_data, (size_t) fcup_response_datalen);
++        copy[fcup_response_datalen] = '\0';
++        return copy;
++    }
++
+     size_t len = uri_local_prefix_len - uri_prefix_len;
+     len *= counter;
+     len += fcup_response_datalen;
+diff --git a/lib/http_handlers.h b/lib/http_handlers.h
+index 586f61e..a130d81 100644
+--- a/lib/http_handlers.h
++++ b/lib/http_handlers.h
+@@ -945,7 +945,9 @@ http_handler_play(raop_conn_t *conn, http_request_t *request, http_response_t *r
+ 
+     /* we only support HLS if the playback location is terminated by "/master.m3u8" */
+     const char *uri_suffix = strstr(playback_location, "/master.m3u8");
+-    if (uri_suffix) {
++    bool plain_http_url = !strncmp(playback_location, "http://", strlen("http://")) ||
++                          !strncmp(playback_location, "https://", strlen("https://"));
++    if (uri_suffix && !plain_http_url) {
+         size_t len = strlen(get_uri_local_prefix(airplay_video)) + strlen(uri_suffix);
+         char *location = (char *) calloc(len + 1, sizeof(char));
+         if (!location) {
+@@ -968,8 +970,7 @@ http_handler_play(raop_conn_t *conn, http_request_t *request, http_response_t *r
+         free (uri_prefix);
+         set_next_media_uri_id(airplay_video, 0);
+         fcup_request((void *) conn, playback_location, apple_session_id, get_next_FCUP_RequestID(airplay_video));
+-    } else if (!strncmp(playback_location, "http://", strlen("http://")) ||
+-               !strncmp(playback_location, "https://", strlen("https://"))) {
++    } else if (plain_http_url) {
+         set_playback_location(airplay_video, playback_location, strlen(playback_location));
+         raop->callbacks.on_video_play(raop->callbacks.cls,
+                                       get_playback_location(airplay_video),
+@@ -1034,7 +1035,9 @@ http_handler_hls(raop_conn_t *conn,  http_request_t *request, http_response_t *r
+     }
+     airplay_video_t *airplay_video = (airplay_video_t *) hls_get_current_video(raop);
+     assert(airplay_video);
+-    if (!strcmp(url, "/master.m3u8")){
++    /* the player may append a query string (e.g. ?hdnea=...) to the master playlist url */
++    if (!strncmp(url, "/master.m3u8", strlen("/master.m3u8")) &&
++        (url[strlen("/master.m3u8")] == '\0' || url[strlen("/master.m3u8")] == '?')) {
+         char * master_playlist  = get_master_playlist(airplay_video);
+         if (master_playlist) {
+             *response_data = master_playlist;

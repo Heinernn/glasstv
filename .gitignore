@@ -1,0 +1,14 @@
+# build output
+build/
+.gradle/
+.cxx/
+*.apk
+local.properties
+
+# never commit
+*.jks
+*.keystore
+backup/
+shots/
+*.log
+getprop*.txt

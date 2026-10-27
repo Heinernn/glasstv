@@ -1,0 +1,13 @@
+﻿diff --git a/configure b/configure
+index 1759694..838ec25 100755
+--- a/configure
++++ b/configure
+@@ -4480,7 +4480,7 @@ if test -f configure; then
+ elif test -f src/configure; then
+     source_path=src
+ else
+-    source_path=$(cd $(dirname "$0"); pwd)
++    source_path=$(cd $(dirname "$0"); pwd -W 2>/dev/null || pwd)
+     case "$source_path" in
+         *[[:blank:]]*) die "Out of tree builds are impossible with whitespace in source path." ;;
+     esac

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Columnas del dock y de la rejilla (4 a 7). -->
+    <integer name="columns">4</integer>
+
+    <!-- Apps del dock, de izquierda a derecha (nombre de paquete).
+         Si faltan o no estan instaladas se rellena con otras apps. -->
+    <!-- Apps que no salen en la rejilla (se usan desde otro sitio, por ejemplo la entrada iPhone). -->
+    <string-array name="hidden_apps">
+        <item>io.github.jqssun.airplay</item>
+    </string-array>
+
+    <string-array name="dock_apps">
+        <item>com.netflix.ninja</item>
+        <item>com.wbd.stream</item>
+        <item>com.disney.disneyplus</item>
+        <item>com.cbs.ca</item>
+    </string-array>
+</resources>
