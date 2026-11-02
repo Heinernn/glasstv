@@ -97,6 +97,13 @@ public class MainActivity extends Activity {
     private LinearLayout menu;
     private TextView name;
     private TextView wifiLabel;
+    private TextView dateView;
+    private final Runnable dateTick = new Runnable() {
+        @Override public void run() {
+            updateDate();
+            ui.postDelayed(this, 30000);
+        }
+    };
 
     private int columns;
     private int dockCount;
@@ -232,25 +239,12 @@ public class MainActivity extends Activity {
             if (i > 0) lp.leftMargin = dp(12);
             pillRow.addView(pills[i], lp);
         }
-        TextClock date = new TextClock(this) {
-            @Override
-            public void setText(CharSequence t, BufferType type) {
-                String x = String.valueOf(t);
-                StringBuilder sb = new StringBuilder(x.length());
-                boolean up = true;
-                for (int i = 0; i < x.length(); i++) {
-                    char ch = x.charAt(i);
-                    sb.append(up && Character.isLetter(ch) ? Character.toUpperCase(ch) : ch);
-                    up = ch == '\n' || ch == ' ';
-                }
-                super.setText(sb, type);
-            }
-        };
-        date.setFormat24Hour("d MMMM'\n'EEEE");
-        date.setFormat12Hour("d MMMM'\n'EEEE");
-        Ui.style(date, 34, 300, WHITE);
-        date.setLineSpacing(0f, 1.1f);
-        date.setShadowLayer(dp(8), 0, dp(2), 0x80000000);
+        dateView = new TextView(this);
+        Ui.style(dateView, 34, 300, WHITE);
+        dateView.setLineSpacing(0f, 1.1f);
+        dateView.setShadowLayer(dp(8), 0, dp(2), 0x80000000);
+        TextView date = dateView;
+        updateDate();
         TextClock clock = new TextClock(this);
         clock.setFormat24Hour("H:mm");
         clock.setFormat12Hour("H:mm");
@@ -288,6 +282,19 @@ public class MainActivity extends Activity {
         glass = new GlassView(this);
         glass.setVisibility(View.INVISIBLE);
         root.addView(glass, match());
+    }
+
+    private void updateDate() {
+        if (dateView == null) return;
+        String x = new java.text.SimpleDateFormat("d MMMM\nEEEE", Locale.getDefault()).format(new java.util.Date());
+        StringBuilder sb = new StringBuilder(x.length());
+        boolean up = true;
+        for (int i = 0; i < x.length(); i++) {
+            char ch = x.charAt(i);
+            sb.append(up && Character.isLetter(ch) ? Character.toUpperCase(ch) : ch);
+            up = ch == '\n' || ch == ' ';
+        }
+        dateView.setText(sb.toString());
     }
 
     private LinearLayout pill(int icon, String text, boolean isWifi) {
@@ -423,6 +430,8 @@ public class MainActivity extends Activity {
     @Override
     protected void onStart() {
         super.onStart();
+        ui.removeCallbacks(dateTick);
+        ui.post(dateTick);
         stopped = false;
         IntentFilter nf = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
         nf.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
@@ -439,6 +448,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onStop() {
+        ui.removeCallbacks(dateTick);
         stopped = true;
         try {
             unregisterReceiver(netReceiver);
