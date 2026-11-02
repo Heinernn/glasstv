@@ -154,7 +154,7 @@ public class MainActivity extends Activity {
     // ---------------------------------------------------------------- interfaz
 
     private void buildUi() {
-        int padLR = dp(68);
+        int padLR = dp(150);
         int cellW = (screenW - 2 * padLR) / columns;
         int inset = dp(8);
         bannerW = cellW - 2 * inset;
@@ -167,7 +167,7 @@ public class MainActivity extends Activity {
         root.setBackgroundResource(R.drawable.wallpaper);
 
         glow = new GlowView(this);
-        glow.setCenter(dp(76) + dp(230), spacerH - dp(48), dp(430));
+        glow.setCenter((padLR + dp(8)) + dp(230), spacerH - dp(48), dp(430));
         root.addView(glow, match());
 
         rv = new RecyclerView(this) {
@@ -216,7 +216,7 @@ public class MainActivity extends Activity {
         name.setAlpha(0f);
         FrameLayout.LayoutParams np = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.START);
-        np.leftMargin = dp(76);
+        np.leftMargin = (padLR + dp(8));
         np.bottomMargin = screenH - spacerH + dp(20);
         root.addView(name, np);
 
