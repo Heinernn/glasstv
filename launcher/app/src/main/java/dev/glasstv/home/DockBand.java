@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 /** Banda redondeada, algo mas clara que el fondo, detras de la fila del dock. */
 final class DockBand extends RecyclerView.ItemDecoration {
     int dockCount;
+    boolean filler;
 
     private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint stroke = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -37,23 +38,27 @@ final class DockBand extends RecyclerView.ItemDecoration {
     public void getItemOffsets(@NonNull Rect out, @NonNull View view, @NonNull RecyclerView parent,
                                @NonNull RecyclerView.State state) {
         int pos = parent.getChildAdapterPosition(view);
-        if (pos > dockCount && pos <= dockCount + columns) out.top = gap;
+        int first = dockCount + 1 + (filler ? 1 : 0);
+        if (pos >= first && pos < first + columns) out.top = gap;
     }
 
     @Override
     public void onDraw(@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
         View first = null;
+        View last = null;
+        int firstPos = Integer.MAX_VALUE;
+        int lastPos = -1;
         for (int i = 0; i < parent.getChildCount(); i++) {
             View v = parent.getChildAt(i);
             int pos = parent.getChildAdapterPosition(v);
             if (pos >= 1 && pos <= dockCount) {
-                first = v;
-                break;
+                if (pos < firstPos) { firstPos = pos; first = v; }
+                if (pos > lastPos) { lastPos = pos; last = v; }
             }
         }
-        if (first == null) return;
-        rect.set(parent.getPaddingLeft() - padX, first.getTop(),
-                parent.getWidth() - parent.getPaddingRight() + padX, first.getBottom());
+        if (first == null || last == null) return;
+        rect.set(first.getLeft() + first.getTranslationX() - padX, first.getTop(),
+                last.getRight() + last.getTranslationX() + padX, first.getBottom());
         c.drawRoundRect(rect, radius, radius, fill);
         c.drawRoundRect(rect, radius, radius, stroke);
     }
