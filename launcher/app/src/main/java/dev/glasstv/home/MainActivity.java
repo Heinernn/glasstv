@@ -160,7 +160,7 @@ public class MainActivity extends Activity {
         bannerW = cellW - 2 * inset;
         bannerH = Math.round(bannerW * 3f / 5f);
         topPad = dp(16);
-        cellH = topPad + bannerH + dp(40);
+        cellH = topPad + bannerH + dp(54);
         int spacerH = screenH - dp(14) - cellH;
 
         root = new FrameLayout(this);
