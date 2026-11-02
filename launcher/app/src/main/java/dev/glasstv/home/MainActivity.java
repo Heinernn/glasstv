@@ -97,8 +97,17 @@ public class MainActivity extends Activity {
     private LinearLayout menu;
     private TextView name;
     private TextView wifiLabel;
+    private TextView dateView;
+    private final Runnable dateTick = new Runnable() {
+        @Override public void run() {
+            updateDate();
+            ui.postDelayed(this, 30000);
+        }
+    };
 
     private int columns;
+    private int gridCols;
+    private float dockOff;
     private int dockCount;
     private int zone = ZONE_TILES;
     private int sel;
@@ -154,20 +163,24 @@ public class MainActivity extends Activity {
     // ---------------------------------------------------------------- interfaz
 
     private void buildUi() {
-        int padLR = dp(68);
+        int padLR = dp(200);
         int cellW = (screenW - 2 * padLR) / columns;
+        gridCols = Math.max(columns, (screenW - 2 * dp(68)) / cellW);
+        int gridPad = (screenW - gridCols * cellW) / 2;
+        dockOff = (gridCols - columns) / 2f;
+        float dockShift = dockOff * cellW;
         int inset = dp(8);
         bannerW = cellW - 2 * inset;
         bannerH = Math.round(bannerW * 3f / 5f);
         topPad = dp(16);
-        cellH = topPad + bannerH + dp(40);
+        cellH = topPad + bannerH + dp(54);
         int spacerH = screenH - dp(14) - cellH;
 
         root = new FrameLayout(this);
         root.setBackgroundResource(R.drawable.wallpaper);
 
         glow = new GlowView(this);
-        glow.setCenter(dp(76) + dp(230), spacerH - dp(48), dp(430));
+        glow.setCenter((padLR + dp(8)) + dp(230), spacerH - dp(48), dp(430));
         root.addView(glow, match());
 
         rv = new RecyclerView(this) {
@@ -178,7 +191,7 @@ public class MainActivity extends Activity {
         };
         rv.setVerticalFadingEdgeEnabled(true);
         rv.setFadingEdgeLength(dp(128));
-        lm = new GridLayoutManager(this, columns) {
+        lm = new GridLayoutManager(this, gridCols) {
             @Override
             protected void calculateExtraLayoutSpace(@NonNull RecyclerView.State st, @NonNull int[] extra) {
                 extra[0] = screenH;
@@ -186,18 +199,18 @@ public class MainActivity extends Activity {
             }
         };
         lm.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
-            @Override public int getSpanSize(int position) { return position == 0 ? columns : 1; }
+            @Override public int getSpanSize(int position) { return adapter.spanSize(position); }
         });
         rv.setLayoutManager(lm);
-        adapter = new AppAdapter(this, columns, spacerH, cellH, inset, topPad, bannerW, bannerH);
+        adapter = new AppAdapter(this, gridCols, columns, dockShift, spacerH, cellH, inset, topPad, bannerW, bannerH);
         rv.setAdapter(adapter);
-        rv.setPadding(padLR, 0, padLR, 0);
+        rv.setPadding(gridPad, 0, gridPad, 0);
         rv.setClipToPadding(false);
         rv.setOverScrollMode(View.OVER_SCROLL_NEVER);
         rv.setItemAnimator(null);
         rv.setFocusable(false);
         rv.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
-        band = new DockBand(this, columns);
+        band = new DockBand(this, gridCols);
         rv.addItemDecoration(band);
         rv.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override public void onScrolled(@NonNull RecyclerView r, int dx, int dy) { updateScrollFade(); }
@@ -210,13 +223,14 @@ public class MainActivity extends Activity {
         root.addView(rv, match());
 
         name = new TextView(this);
-        Ui.style(name, 44, 250, WHITE);
+        Ui.style(name, 32, 320, WHITE);
+        name.setShadowLayer(dp(8), 0, dp(2), 0x80000000);
         name.setSingleLine(true);
         name.setAlpha(0f);
         FrameLayout.LayoutParams np = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.START);
-        np.leftMargin = dp(76);
-        np.bottomMargin = screenH - spacerH + dp(20);
+        np.leftMargin = (padLR + dp(8));
+        np.bottomMargin = screenH - spacerH + dp(4);
         root.addView(name, np);
 
         pillRow = new LinearLayout(this);
@@ -231,6 +245,12 @@ public class MainActivity extends Activity {
             if (i > 0) lp.leftMargin = dp(12);
             pillRow.addView(pills[i], lp);
         }
+        dateView = new TextView(this);
+        Ui.style(dateView, 34, 300, WHITE);
+        dateView.setLineSpacing(0f, 1.1f);
+        dateView.setShadowLayer(dp(8), 0, dp(2), 0x80000000);
+        TextView date = dateView;
+        updateDate();
         TextClock clock = new TextClock(this);
         clock.setFormat24Hour("H:mm");
         clock.setFormat12Hour("H:mm");
@@ -239,6 +259,15 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         clp.leftMargin = dp(22);
         pillRow.addView(clock, clp);
+        LinearLayout corner = new LinearLayout(this);
+        corner.setOrientation(LinearLayout.VERTICAL);
+        corner.addView(date, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        FrameLayout.LayoutParams dlp = new FrameLayout.LayoutParams(
+                dp(320), ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.START);
+        dlp.topMargin = dp(22);
+        dlp.leftMargin = dp(44);
+        root.addView(corner, dlp);
         FrameLayout.LayoutParams pr = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.END);
         pr.topMargin = dp(30);
@@ -260,6 +289,19 @@ public class MainActivity extends Activity {
         glass = new GlassView(this);
         glass.setVisibility(View.INVISIBLE);
         root.addView(glass, match());
+    }
+
+    private void updateDate() {
+        if (dateView == null) return;
+        String x = new java.text.SimpleDateFormat("d MMMM\nEEEE", Locale.getDefault()).format(new java.util.Date());
+        StringBuilder sb = new StringBuilder(x.length());
+        boolean up = true;
+        for (int i = 0; i < x.length(); i++) {
+            char ch = x.charAt(i);
+            sb.append(up && Character.isLetter(ch) ? Character.toUpperCase(ch) : ch);
+            up = ch == '\n' || ch == ' ';
+        }
+        dateView.setText(sb.toString());
     }
 
     private LinearLayout pill(int icon, String text, boolean isWifi) {
@@ -313,11 +355,12 @@ public class MainActivity extends Activity {
         apps.addAll(l.apps);
         dockCount = l.dockCount;
         band.dockCount = dockCount;
+        band.filler = !apps.isEmpty() && gridCols > dockCount;
         sel = 0;
         for (int i = 0; i < apps.size(); i++) {
             if (apps.get(i).pkg.equals(keep)) sel = i;
         }
-        adapter.setData(apps);
+        adapter.setData(apps, dockCount);
         adapter.setSelected(zone == ZONE_TILES ? sel : -1, false, rv);
         afterLayout(() -> {
             syncGlass(false);
@@ -395,6 +438,8 @@ public class MainActivity extends Activity {
     @Override
     protected void onStart() {
         super.onStart();
+        ui.removeCallbacks(dateTick);
+        ui.post(dateTick);
         stopped = false;
         IntentFilter nf = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
         nf.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
@@ -411,6 +456,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onStop() {
+        ui.removeCallbacks(dateTick);
         stopped = true;
         try {
             unregisterReceiver(netReceiver);
@@ -447,7 +493,7 @@ public class MainActivity extends Activity {
     private void goHome() {
         if (zone == ZONE_MENU) hideMenu();
         zone = ZONE_TILES;
-        if (!apps.isEmpty()) selectTile(sel < columns ? sel : sel % columns, true);
+        if (!apps.isEmpty()) selectTile(dockIndexFor(sel), true);
     }
 
     // ---------------------------------------------------------------- mando
@@ -486,29 +532,50 @@ public class MainActivity extends Activity {
         else if (k == KeyEvent.KEYCODE_DPAD_DOWN) moveTiles(1, 0);
         else if (k == KeyEvent.KEYCODE_DPAD_UP) moveTiles(-1, 0);
         else if (isOk(k) && repeat == 0) launchSelected();
-        else if (k == KeyEvent.KEYCODE_BACK && sel >= columns) selectTile(sel % columns, true);
+        else if (k == KeyEvent.KEYCODE_BACK && sel >= dockCount) selectTile(dockIndexFor(sel), true);
+    }
+
+    private int rowOf(int i) {
+        return i < dockCount ? 0 : 1 + (i - dockCount) / gridCols;
+    }
+
+    private int colOf(int i) {
+        return i < dockCount ? i : (i - dockCount) % gridCols;
+    }
+
+    /** Indice del dock que queda mas cerca (en horizontal) de la app indicada. */
+    private int dockIndexFor(int i) {
+        if (i < dockCount) return i;
+        int c = Math.round(colOf(i) - dockOff);
+        return Math.max(0, Math.min(dockCount - 1, c));
     }
 
     private void moveTiles(int dRow, int dCol) {
         int n = apps.size();
-        int row = sel / columns;
-        int col = sel % columns;
-        int lastRow = (n - 1) / columns;
+        int row = rowOf(sel);
+        int col = colOf(sel);
+        int lastRow = rowOf(n - 1);
         int next = sel;
         if (dCol != 0) {
             int nc = col + dCol;
-            if (nc < 0 || nc >= columns) return;
-            next = row * columns + nc;
-            if (next >= n) return;
+            if (row == 0) {
+                if (nc < 0 || nc >= dockCount) return;
+                next = nc;
+            } else {
+                if (nc < 0 || nc >= gridCols) return;
+                next = dockCount + (row - 1) * gridCols + nc;
+                if (next >= n) return;
+            }
         } else if (dRow > 0) {
             if (row >= lastRow) return;
-            next = Math.min((row + 1) * columns + col, n - 1);
+            int gc = row == 0 ? Math.max(0, Math.min(gridCols - 1, Math.round(col + dockOff))) : col;
+            next = Math.min(dockCount + row * gridCols + gc, n - 1);
         } else if (dRow < 0) {
             if (row == 0) {
                 enterTop();
                 return;
             }
-            next = (row - 1) * columns + col;
+            next = row == 1 ? dockIndexFor(sel) : sel - gridCols;
         }
         selectTile(next, true);
     }
@@ -589,10 +656,10 @@ public class MainActivity extends Activity {
 
     /** Coloca el cristal sobre la tile y, si hace falta, desplaza la lista exactamente lo necesario. */
     private void scrollAndGlass(final int idx, boolean animate, final boolean plan, final int attempt) {
-        RecyclerView.ViewHolder vh = rv.findViewHolderForAdapterPosition(idx + 1);
+        RecyclerView.ViewHolder vh = rv.findViewHolderForAdapterPosition(adapter.posOf(idx));
         if (vh == null) {
             if (attempt < 3) {
-                lm.scrollToPosition(idx + 1);
+                lm.scrollToPosition(adapter.posOf(idx));
                 afterLayout(() -> scrollAndGlass(idx, false, plan, attempt + 1));
             }
             return;
@@ -602,12 +669,12 @@ public class MainActivity extends Activity {
         if (plan) {
             int bottomLimit = screenH - dp(14);
             int topLimit = dp(96);
-            if (idx < columns) dy = -scrollOffset();
+            if (idx < dockCount) dy = -scrollOffset();
             else if (v.getBottom() > bottomLimit) dy = v.getBottom() - bottomLimit;
             else if (v.getTop() < topLimit) dy = v.getTop() - topLimit;
         }
         float pad = dp(GLASS_PAD_DP);
-        float cx = v.getLeft() + v.getWidth() / 2f;
+        float cx = v.getLeft() + v.getTranslationX() + v.getWidth() / 2f;
         float cy = v.getTop() + topPad + bannerH / 2f - dy;
         glassTo(cx, cy, bannerW * TileView.SCALE + 2 * pad, bannerH * TileView.SCALE + 2 * pad,
                 dp(10) * TileView.SCALE + pad, animate);

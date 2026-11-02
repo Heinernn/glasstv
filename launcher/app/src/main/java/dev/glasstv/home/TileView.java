@@ -15,7 +15,8 @@ import android.widget.TextView;
 /** Icono de app estilo tvOS: 5:3, esquinas redondas, al enfocar se eleva, se inclina y pasa un brillo. */
 final class TileView extends FrameLayout {
     static final float SCALE = 1.12f;
-    static final float CORNER_DP = 14f;
+    static final float UNFOCUSED_LABEL = 0.55f;
+    static final float CORNER_DP = 18f;
 
     private final FrameLayout card;
     private final ImageView banner;
@@ -46,6 +47,7 @@ final class TileView extends FrameLayout {
             }
         });
         card.setClipToOutline(true);
+        card.setElevation(Ui.dp(c, 6));
 
         banner = new ImageView(c);
         banner.setScaleType(ImageView.ScaleType.CENTER_CROP);
@@ -65,7 +67,7 @@ final class TileView extends FrameLayout {
         Ui.style(label, 12.5f, 400, Color.WHITE);
         label.setGravity(Gravity.CENTER_HORIZONTAL);
         label.setSingleLine(true);
-        label.setAlpha(0f);
+        label.setAlpha(UNFOCUSED_LABEL);
         LayoutParams lp = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, Gravity.TOP);
         lp.topMargin = topPad + bannerH + Ui.dp(c, 16);
         lp.leftMargin = inset;
@@ -88,7 +90,7 @@ final class TileView extends FrameLayout {
     /** tilt: grados de giro lateral al enfocar (cada icono mira un poco hacia el centro de la pantalla). */
     void setLook(boolean on, boolean animate, float tilt) {
         float s = on ? SCALE : 1f;
-        float a = on ? 1f : 0f;
+        float a = on ? 1f : UNFOCUSED_LABEL;
         float rot = on ? tilt : 0f;
         float z = on ? lift : 0f;
         animate().cancel();
