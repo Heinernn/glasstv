@@ -154,7 +154,7 @@ public class MainActivity extends Activity {
     // ---------------------------------------------------------------- interfaz
 
     private void buildUi() {
-        int padLR = dp(150);
+        int padLR = dp(200);
         int cellW = (screenW - 2 * padLR) / columns;
         int inset = dp(8);
         bannerW = cellW - 2 * inset;
@@ -210,14 +210,14 @@ public class MainActivity extends Activity {
         root.addView(rv, match());
 
         name = new TextView(this);
-        Ui.style(name, 46, 320, WHITE);
+        Ui.style(name, 32, 320, WHITE);
         name.setShadowLayer(dp(8), 0, dp(2), 0x80000000);
         name.setSingleLine(true);
         name.setAlpha(0f);
         FrameLayout.LayoutParams np = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.START);
         np.leftMargin = (padLR + dp(8));
-        np.bottomMargin = screenH - spacerH + dp(20);
+        np.bottomMargin = screenH - spacerH + dp(4);
         root.addView(name, np);
 
         pillRow = new LinearLayout(this);
