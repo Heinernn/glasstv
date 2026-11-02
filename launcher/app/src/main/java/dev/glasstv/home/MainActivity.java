@@ -248,15 +248,15 @@ public class MainActivity extends Activity {
         TextClock clock = new TextClock(this);
         clock.setFormat24Hour("H:mm");
         clock.setFormat12Hour("H:mm");
-        Ui.style(clock, 22, 400, 0xCCFFFFFF);
+        Ui.style(clock, 22, 400, 0xE6FFFFFF);
+        LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        clp.leftMargin = dp(22);
+        pillRow.addView(clock, clp);
         LinearLayout corner = new LinearLayout(this);
         corner.setOrientation(LinearLayout.VERTICAL);
         corner.addView(date, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        clp.topMargin = dp(6);
-        corner.addView(clock, clp);
         FrameLayout.LayoutParams dlp = new FrameLayout.LayoutParams(
                 dp(320), ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.START);
         dlp.topMargin = dp(22);
