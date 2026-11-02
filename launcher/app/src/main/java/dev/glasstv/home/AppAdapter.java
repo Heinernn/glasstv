@@ -1,5 +1,6 @@
 package dev.glasstv.home;
 
+import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,6 +25,7 @@ final class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final int bannerH;
     private final List<AppEntry> apps = new ArrayList<>();
     private int selected = -1;
+    private boolean intro = true;
 
     AppAdapter(Context ctx, int columns, int spacerHeight, int cellHeight, int inset, int topPad,
                int bannerW, int bannerH) {
@@ -94,5 +96,18 @@ final class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         TileView t = (TileView) holder.itemView;
         t.bind(apps.get(position - 1));
         t.setLook(position - 1 == selected, false, tilt(position - 1));
+        t.setAlpha(1f);
+        t.setTranslationY(0f);
+        if (intro && position <= columns * 3) {
+            long delay = 40L * (((position - 1) / columns) * 2 + (position - 1) % columns);
+            t.setAlpha(0f);
+            t.setTranslationY(ctx.getResources().getDisplayMetrics().density * 24f);
+            ObjectAnimator a = ObjectAnimator.ofFloat(t, View.ALPHA, 0f, 1f);
+            ObjectAnimator y = ObjectAnimator.ofFloat(t, View.TRANSLATION_Y, t.getTranslationY(), 0f);
+            a.setStartDelay(delay); y.setStartDelay(delay);
+            a.setDuration(380); y.setDuration(380);
+            a.start(); y.start();
+            if (position == columns * 3 || position == apps.size()) intro = false;
+        }
     }
 }

@@ -210,7 +210,8 @@ public class MainActivity extends Activity {
         root.addView(rv, match());
 
         name = new TextView(this);
-        Ui.style(name, 44, 250, WHITE);
+        Ui.style(name, 46, 320, WHITE);
+        name.setShadowLayer(dp(8), 0, dp(2), 0x80000000);
         name.setSingleLine(true);
         name.setAlpha(0f);
         FrameLayout.LayoutParams np = new FrameLayout.LayoutParams(
@@ -239,6 +240,14 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         clp.leftMargin = dp(22);
         pillRow.addView(clock, clp);
+        TextClock date = new TextClock(this);
+        date.setFormat24Hour("EEE d MMM");
+        date.setFormat12Hour("EEE d MMM");
+        Ui.style(date, 15, 400, 0x99FFFFFF);
+        LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        dlp.leftMargin = dp(12);
+        pillRow.addView(date, dlp);
         FrameLayout.LayoutParams pr = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.END);
         pr.topMargin = dp(30);

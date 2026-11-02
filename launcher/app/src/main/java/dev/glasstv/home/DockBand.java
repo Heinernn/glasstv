@@ -27,10 +27,10 @@ final class DockBand extends RecyclerView.ItemDecoration {
         padX = Ui.dp(c, 20);
         radius = Ui.dp(c, 28);
         gap = Ui.dp(c, 22);
-        fill.setColor(0xFF1A1A1D);
+        fill.setColor(0x24FFFFFF);
         stroke.setStyle(Paint.Style.STROKE);
         stroke.setStrokeWidth(Ui.dp(c, 1));
-        stroke.setColor(0x14FFFFFF);
+        stroke.setColor(0x33FFFFFF);
     }
 
     @Override

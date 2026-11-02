@@ -54,11 +54,11 @@ final class GlowView extends View {
         int rgb = color & 0x00FFFFFF;
         if (getHeight() > 0) {
             ambient.setShader(new LinearGradient(0, 0, 0, getHeight(),
-                    0x38000000 | rgb, 0x0C000000 | rgb, Shader.TileMode.CLAMP));
+                    0x66000000 | rgb, 0x10000000 | rgb, Shader.TileMode.CLAMP));
         }
         if (radius > 0) {
             radial.setShader(new RadialGradient(cx, cy, radius,
-                    new int[] {0x60000000 | rgb, 0x28000000 | rgb, rgb},
+                    new int[] {0x90000000 | rgb, 0x40000000 | rgb, rgb},
                     new float[] {0f, 0.55f, 1f}, Shader.TileMode.CLAMP));
         }
     }
