@@ -232,25 +232,41 @@ public class MainActivity extends Activity {
             if (i > 0) lp.leftMargin = dp(12);
             pillRow.addView(pills[i], lp);
         }
-        TextClock clock = new TextClock(this);
-        clock.setFormat24Hour("H:mm");
-        clock.setFormat12Hour("H:mm");
-        Ui.style(clock, 22, 400, 0xE6FFFFFF);
-        LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        clp.leftMargin = dp(22);
-        pillRow.addView(clock, clp);
-        TextClock date = new TextClock(this);
+        TextClock date = new TextClock(this) {
+            @Override
+            public void setText(CharSequence t, BufferType type) {
+                String x = String.valueOf(t);
+                StringBuilder sb = new StringBuilder(x.length());
+                boolean up = true;
+                for (int i = 0; i < x.length(); i++) {
+                    char ch = x.charAt(i);
+                    sb.append(up && Character.isLetter(ch) ? Character.toUpperCase(ch) : ch);
+                    up = ch == '\n' || ch == ' ';
+                }
+                super.setText(sb, type);
+            }
+        };
         date.setFormat24Hour("d MMMM'\n'EEEE");
         date.setFormat12Hour("d MMMM'\n'EEEE");
         Ui.style(date, 34, 300, WHITE);
         date.setLineSpacing(0f, 1.1f);
         date.setShadowLayer(dp(8), 0, dp(2), 0x80000000);
+        TextClock clock = new TextClock(this);
+        clock.setFormat24Hour("H:mm");
+        clock.setFormat12Hour("H:mm");
+        Ui.style(clock, 22, 400, 0xCCFFFFFF);
+        LinearLayout corner = new LinearLayout(this);
+        corner.setOrientation(LinearLayout.VERTICAL);
+        corner.addView(date);
+        LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        clp.topMargin = dp(6);
+        corner.addView(clock, clp);
         FrameLayout.LayoutParams dlp = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.START);
-        dlp.topMargin = dp(28);
-        dlp.leftMargin = padLR + dp(8);
-        root.addView(date, dlp);
+        dlp.topMargin = dp(22);
+        dlp.leftMargin = dp(44);
+        root.addView(corner, dlp);
         FrameLayout.LayoutParams pr = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.END);
         pr.topMargin = dp(30);
