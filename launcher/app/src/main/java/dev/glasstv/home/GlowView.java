@@ -32,7 +32,7 @@ final class GlowView extends View {
         java.util.Random r = new java.util.Random(7);
         for (int y = 0; y < 96; y++) {
             for (int x = 0; x < 96; x++) {
-                int a = r.nextInt(14);
+                int a = r.nextInt(4);
                 n.setPixel(x, y, (a << 24) | (r.nextBoolean() ? 0xFFFFFF : 0x000000));
             }
         }
