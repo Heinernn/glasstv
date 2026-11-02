@@ -241,13 +241,16 @@ public class MainActivity extends Activity {
         clp.leftMargin = dp(22);
         pillRow.addView(clock, clp);
         TextClock date = new TextClock(this);
-        date.setFormat24Hour("EEE d MMM");
-        date.setFormat12Hour("EEE d MMM");
-        Ui.style(date, 15, 400, 0x99FFFFFF);
-        LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        dlp.leftMargin = dp(12);
-        pillRow.addView(date, dlp);
+        date.setFormat24Hour("d MMMM'\n'EEEE");
+        date.setFormat12Hour("d MMMM'\n'EEEE");
+        Ui.style(date, 34, 300, WHITE);
+        date.setLineSpacing(0f, 1.1f);
+        date.setShadowLayer(dp(8), 0, dp(2), 0x80000000);
+        FrameLayout.LayoutParams dlp = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.START);
+        dlp.topMargin = dp(28);
+        dlp.leftMargin = padLR + dp(8);
+        root.addView(date, dlp);
         FrameLayout.LayoutParams pr = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.END);
         pr.topMargin = dp(30);
