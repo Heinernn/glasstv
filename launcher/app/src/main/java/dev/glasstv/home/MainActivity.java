@@ -251,13 +251,14 @@ public class MainActivity extends Activity {
         Ui.style(clock, 22, 400, 0xCCFFFFFF);
         LinearLayout corner = new LinearLayout(this);
         corner.setOrientation(LinearLayout.VERTICAL);
-        corner.addView(date);
+        corner.addView(date, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         clp.topMargin = dp(6);
         corner.addView(clock, clp);
         FrameLayout.LayoutParams dlp = new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.START);
+                dp(320), ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.START);
         dlp.topMargin = dp(22);
         dlp.leftMargin = dp(44);
         root.addView(corner, dlp);
