@@ -10,4 +10,5 @@
     <string name="iphone">iPhone</string>
     <string name="no_inputs">No inputs</string>
     <string name="cannot_open">Could not open</string>
+    <string name="key_service_desc">Remote shortcuts: the YouTube button opens YouTube and the APPS button opens this launcher.</string>
 </resources>
