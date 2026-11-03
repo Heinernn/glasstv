@@ -12,4 +12,7 @@
     <string name="airplay_receiver" translatable="false">io.github.jqssun.airplay</string>
     <string name="no_inputs">Sin entradas</string>
     <string name="cannot_open">No se pudo abrir</string>
+    <string name="key_service_desc">Atajos del control remoto: boton YouTube abre YouTube y boton APPS abre este launcher.</string>
+    <!-- Paquete de la app de YouTube para Android TV. -->
+    <string name="youtube_pkg" translatable="false">com.google.android.youtube.tv</string>
 </resources>
